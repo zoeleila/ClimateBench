@@ -1,0 +1,21 @@
+data:
+  simus: ['hist-GHG', 'hist-aer','ssp126', 'ssp245', 'ssp370', 'ssp370-lowNTCF', 'ssp585', historical]
+  slider: 10
+  len_historical: 165 
+  raw_dir: '/scratch/globc/garcia/ClimateBench/rawdata/train_val'
+  dataset_dir: '/scratch/globc/garcia/ClimateBench/dataset/dataset_exp1'
+  vars_to_predict: ['diurnal_temperature_range', 'tas', 'pr', 'pr90']
+  vars: ['CO2', 'CH4', 'SO2', 'BC']
+
+model:
+  arch: 'lstm'
+  learning_rate: 0.001
+  epoch: 30
+  batch_size: 16
+  slider: 10
+  runs_dir: RUNS_DIR
+  model: 'lstm'
+  var_to_predict: 'tas'
+  exp: 'exp1/lstm_5scenarios_tas'
+  simus_train: ['ssp126', 'ssp370', 'ssp585', 'hist-GHG', 'hist-aer']
+  simus_test: ['ssp245']
