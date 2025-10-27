@@ -1,3 +1,8 @@
+# ClimateBench modifed
+Modified by Zoé Garcia
+
+
+
 # ClimateBench
 
 ClimateBench is a benchmark dataset for climate model emulation inspired by [WeatherBench](https://github.com/pangeo-data/WeatherBench). It consists of NorESM2 simulation outputs with associated forcing data processed in to a consistent format from a variety of experiments performed for CMIP6. Multiple ensemble members are included where available. 
