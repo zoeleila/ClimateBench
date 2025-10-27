@@ -1,5 +1,8 @@
 # ClimateBench modifed
-Modified by Zoé Garcia
+Modified by Zoé Garcia to include : 
+- Pytorch library : Lightning Module, Dataset and Dataloader
+- config.yaml file
+- Additional analysis
 
 
 
