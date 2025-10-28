@@ -1,11 +1,9 @@
-import sys
-sys.path.append('.')
-
 import xarray as xr
 import numpy as np
 import json
+from pathlib import Path
 
-from funcs.hparams import HParams    
+from ClimateBench.funcs.hparams import HParams    
 
 class Dataset():
     def __init__(self, data_path, simus):
@@ -57,7 +55,7 @@ class Dataset():
 if __name__ == "__main__":
     
     hparams = HParams()
-    dataset = Dataset(hparams.data_path, hparams.simus)
+    dataset = Dataset(Path('/gpfs-calypso/scratch/globc/garcia/ClimateBench/rawdata/train_val'), hparams.simus_train)
 
     X_train, Y_train = dataset.load_data()
     meanstd_inputs = {}
@@ -68,7 +66,8 @@ if __name__ == "__main__":
         array = np.concatenate([X_train[i][var].data for i in [0, 3, 4]] + 
                             [X_train[i][var].sel(time=slice(hparams.len_historical, None)).data for i in range(1, 3)])
         print((array.mean(), array.std()))
+        print(array.shape)
         meanstd_inputs[var] = (array.mean(), array.std())
     
-    with open(hparams.data_path/'meanstd_dict.json', "w") as f: 
-        json.dump(meanstd_inputs, f)
+    #with open(hparams.data_path/'meanstd_dict.json', "w") as f: 
+        #json.dump(meanstd_inputs, f)
