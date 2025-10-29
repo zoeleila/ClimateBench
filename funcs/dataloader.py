@@ -114,7 +114,7 @@ def get_stats_from_dataloader(train_dataloader: DataLoader,
     """
     Computes the mean and standard deviation of the input variable across the entire dataset (scalars !).
     x.shape = (batch_size, slider, height, width, channels) 
-    Carefull, doesn't take the first 9 years from 1850 to 1859 into account, use compute_statistics function for that.
+    Carefull, doesn't take the first 9 years from 1850 to 1859 into account, use compute_statistics.py script for that.
 
     Args:
         dataloader (DataLoader): A PyTorch DataLoader object containing the dataset. 
