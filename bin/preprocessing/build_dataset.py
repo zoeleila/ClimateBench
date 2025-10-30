@@ -59,7 +59,10 @@ class BuilderDataset:
             last_year = min(input_xr.time.data[-1], output_xr.time.data[-1])
             input_xr = input_xr.sel(time=slice(None, last_year))
             output_xr = output_xr.sel(time=slice(None, last_year))
-
+        input_order = ['CO2', 'SO2', 'CH4', 'BC']
+        input_xr = input_xr[input_order]
+        output_order = ['diurnal_temperature_range', 'tas', 'pr', 'pr90']
+        output_xr = output_xr[output_order]
         return input_xr, output_xr
     
     def time_formating(self, data, simu, input=False):
@@ -91,33 +94,32 @@ class BuilderDataset:
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('--exp', type=str, required=True, help='Experiment name corresponding to a config file')
+    parser.add_argument('--config', type=str, required=True, help='Experiment name corresponding to a config file')
     args = parser.parse_args()
-    exp = args.exp  
+    config = args.config
 
-    with open(f'./ClimateBench/configs/config_{exp}.yaml') as file:
+    with open(config) as file:
         config = yaml.safe_load(file)
 
-    simus = config['simus']
-    slider = config['slider']
-    len_historical = config['len_historical']
+    simus = config['data']['simus']
+    slider = config['data']['slider']
+    len_historical = config['data']['len_historical']
     raw_dir = Path(config['data']['raw_dir'])
     dataset_dir = Path(config['data']['dataset_dir'])
 
-    builder = BuilderDataset(raw_path=raw_dir,
+    builder = BuilderDataset(raw_dir=raw_dir,
                              dataset_dir=dataset_dir,
                              slider=slider,
                              len_historical=len_historical)
     
     for i, simu in enumerate(simus):
         print(simu)
-        X_np, Y_np, time = builder.build_samples(simu)   
-        print(time.shape)
+        X_np, Y_np, time = builder.build_samples(simu)
         for i, year in enumerate(np.squeeze(time)):
             print(year)
             sample = {'x': X_np[i],
                       'y': Y_np[i]}
             sample_name = f'sample_{simu}_{year}.npz'
-            np.savez(dataset_dir / f'dataset_{exp}'/ sample_name, **sample)
+            np.savez(dataset_dir / sample_name, **sample)
             
         

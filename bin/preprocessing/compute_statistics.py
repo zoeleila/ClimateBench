@@ -33,8 +33,8 @@ def compute_stats(list_samples, config:dict)->dict:
         min = torch.min(min, torch.min(x, dim=0).values)
         max = torch.max(max, torch.max(x, dim=0).values)
 
-    list_samples_hist = [f for f in list_samples if '_1859' in f]
-    for sample in tqdm(list_samples_hist, desc="Computing stats from historical period"):
+    list_samples_hist_start = [f for f in list_samples if '_1859' in f]
+    for sample in tqdm(list_samples_hist_start, desc="Computing stats from historical period"):
         x = dict(np.load(sample, allow_pickle=True))['x']
         x = torch.tensor(x[:-1,:,:,:])  # Take only the 9 first time steps
         n = x.shape[0] * x.shape[1] * x.shape[2]  # time * height * width
@@ -44,7 +44,7 @@ def compute_stats(list_samples, config:dict)->dict:
         n_total += n
         min = torch.min(min, torch.min(x, dim=0).values)
         max = torch.max(max, torch.max(x, dim=0).values)
-
+    print(n_total)
     mean = sum / n_total
     std = torch.sqrt((square_sum / n_total) - (mean ** 2))
     stats = {}
@@ -55,6 +55,31 @@ def compute_stats(list_samples, config:dict)->dict:
                          'max': max[i].item()}
     print(stats)
     return stats
+
+def compute_stats2(list_samples, config:dict)->dict:
+    channels = config['data']['vars']
+    x_full = []
+    for samples in tqdm(list_samples, desc="Loading all data into memory"):
+        x = dict(np.load(samples, allow_pickle=True))['x']
+        if x[:,:,:,1].mean() > 1e-5:
+            print(x[:,:,:,1].mean())
+            print(samples)
+        if '_1859' in samples:
+            x_full.append(x[:,:,:,:])  # Take only the 9 first time steps
+        else:
+            x_full.append(x[-1:,:,:,:])  # Take only the last time step because we don't want redondancy
+    x_full = np.concatenate(x_full, axis=0)
+
+    stats = {}
+    for i, channel in enumerate(channels):
+        array = x_full[:,:,:,i]
+        stats[channel] = {'mean': array.mean(),
+                        'std': array.std(),
+                        'min': array.min(),
+                        'max': array.max()}
+    print(stats)
+    return stats
+
 
 if __name__=='__main__':
     parser = argparse.ArgumentParser()
@@ -70,6 +95,9 @@ if __name__=='__main__':
     list_simu = [f'_{simu}_' for simu in config['model']['simus_train']]
     regex = re.compile('|'.join(re.escape(p) for p in list_simu))
     list_samples = [f for f in list_samples if regex.search(f)]
+    list_samples_historical = [f for f in list_samples if '_historical_' in f]
+    list_samples.extend(list_samples_historical)
+    list_samples.extend(list_samples_historical) # two times for ssp126 and ssp370
 
     stats = compute_stats(list_samples, config)
     with open(sample_dir/'statistics.json', "w") as f: 

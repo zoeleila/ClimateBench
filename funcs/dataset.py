@@ -44,7 +44,6 @@ class Dataset():
                                             "pr90": output_xr.pr90 * 86400}).rename({'lon':'longitude', 
                                                                                     'lat': 'latitude'}).transpose('time','latitude', 'longitude').drop(['quantile'])
 
-            print(input_xr.dims, simu)
 
             # Append to list 
             X_train.append(input_xr)

@@ -6,7 +6,7 @@ data:
   raw_dir: '/scratch/globc/garcia/ClimateBench/rawdata/train_val'
   dataset_dir: '/scratch/globc/garcia/ClimateBench/dataset/dataset_exp1'
   vars_to_predict: ['diurnal_temperature_range', 'tas', 'pr', 'pr90']
-  vars: ['CO2', 'CH4', 'SO2', 'BC']
+  vars: ['CO2', 'SO2', 'CH4', 'BC']
 
 model:
   arch: 'lstm'
