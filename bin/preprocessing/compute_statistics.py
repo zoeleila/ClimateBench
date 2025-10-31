@@ -32,7 +32,7 @@ def compute_stats(list_samples, config:dict)->dict:
         n_total += n
         min = torch.min(min, torch.min(x, dim=0).values)
         max = torch.max(max, torch.max(x, dim=0).values)
-
+    
     list_samples_hist_start = [f for f in list_samples if '_1859' in f]
     for sample in tqdm(list_samples_hist_start, desc="Computing stats from historical period"):
         x = dict(np.load(sample, allow_pickle=True))['x']
@@ -96,9 +96,9 @@ if __name__=='__main__':
     regex = re.compile('|'.join(re.escape(p) for p in list_simu))
     list_samples = [f for f in list_samples if regex.search(f)]
     list_samples_historical = [f for f in list_samples if '_historical_' in f]
-    list_samples.extend(list_samples_historical)
-    list_samples.extend(list_samples_historical) # two times for ssp126 and ssp370
+    #list_samples.extend(list_samples_historical)
+    #list_samples.extend(list_samples_historical) # two times for ssp126 and ssp370
 
     stats = compute_stats(list_samples, config)
-    with open(sample_dir/'statistics.json', "w") as f: 
+    with open(sample_dir/'statistics2.json', "w") as f: 
         json.dump(stats, f)
