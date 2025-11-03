@@ -18,24 +18,35 @@ import numpy as np
 class BuilderDataset:
     def __init__(self,
                  raw_dir:Path,
-                 dataset_dir:Path,
                  slider:int,
                  len_historical:int):
         self.raw_dir = raw_dir
-        self.dataset_dir = dataset_dir
         self.slider = slider
         self.len_historical = len_historical
 
-    def load_data(self, simu):
-
+    def load_input(self, simu):
         input_name = 'inputs_' + simu + '.nc'
-        output_name = 'outputs_' + simu + '.nc'
 
         # Just load hist data in these cases 'hist-GHG' and 'hist-aer'
         if 'hist' in simu:
             # load inputs 
             input_xr = xr.open_dataset(self.raw_dir / input_name)
-                
+        
+        # Concatenate with historical data in the case of scenario 'ssp126', 'ssp370' and 'ssp585'
+        else:
+            # load inputs 
+            input_xr = xr.open_mfdataset([self.raw_dir / 'inputs_historical.nc', 
+                                            self.raw_dir / input_name]).compute()
+        
+        input_order = ['CO2', 'SO2', 'CH4', 'BC']
+        input_xr = input_xr[input_order]
+        return input_xr
+    
+    def load_output(self, simu):
+        output_name = 'outputs_' + simu + '.nc'
+
+        # Just load hist data in these cases 'hist-GHG' and 'hist-aer'
+        if 'hist' in simu:
             # load outputs                                                             
             output_xr = xr.open_dataset(self.raw_dir / output_name).mean(dim='member')
             output_xr = output_xr.assign({"pr": output_xr.pr * 86400,
@@ -43,27 +54,16 @@ class BuilderDataset:
                                                                                 'lat': 'latitude'}).transpose('time','latitude', 'longitude').drop_vars(['quantile'])
         
         # Concatenate with historical data in the case of scenario 'ssp126', 'ssp370' and 'ssp585'
-        else:
-            # load inputs 
-            input_xr = xr.open_mfdataset([self.raw_dir / 'inputs_historical.nc', 
-                                            self.raw_dir / input_name]).compute()
-                
-            # load outputs                                                             
+        else:                                                           
             output_xr = xr.concat([xr.open_dataset(self.raw_dir / 'outputs_historical.nc').mean(dim='member'),
                                 xr.open_dataset(self.raw_dir / output_name).mean(dim='member')],
                                 dim='time').compute()
             output_xr = output_xr.assign({"pr": output_xr.pr * 86400,
                                         "pr90": output_xr.pr90 * 86400}).rename({'lon':'longitude', 
                                                                                 'lat': 'latitude'}).transpose('time','latitude', 'longitude').drop_vars(['quantile'])
-        if input_xr.time.shape[0] != output_xr.time.shape[0]:
-            last_year = min(input_xr.time.data[-1], output_xr.time.data[-1])
-            input_xr = input_xr.sel(time=slice(None, last_year))
-            output_xr = output_xr.sel(time=slice(None, last_year))
-        input_order = ['CO2', 'SO2', 'CH4', 'BC']
-        input_xr = input_xr[input_order]
         output_order = ['diurnal_temperature_range', 'tas', 'pr', 'pr90']
         output_xr = output_xr[output_order]
-        return input_xr, output_xr
+        return output_xr
     
     def time_formating(self, data, simu, input=False):
         time_length = data.shape[0]
@@ -81,7 +81,12 @@ class BuilderDataset:
     
 
     def build_samples(self, simu):
-        X_xr, Y_xr = self.load_data(simu)
+        X_xr = self.load_input(simu)
+        Y_xr = self.load_output(simu)
+        if X_xr.time.shape[0] != Y_xr.time.shape[0]:
+            last_year = min(X_xr.time.data[-1], Y_xr.time.data[-1])
+            X_xr = X_xr.sel(time=slice(None, last_year))
+            Y_xr = Y_xr.sel(time=slice(None, last_year))
         X_np = self.time_formating(X_xr.to_array().transpose('time', 'latitude', 'longitude', 'variable').data,
                                    simu=simu,
                                    input=True)
@@ -108,7 +113,6 @@ if __name__ == "__main__":
     dataset_dir = Path(config['data']['dataset_dir'])
 
     builder = BuilderDataset(raw_dir=raw_dir,
-                             dataset_dir=dataset_dir,
                              slider=slider,
                              len_historical=len_historical)
     

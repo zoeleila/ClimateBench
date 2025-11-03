@@ -17,7 +17,7 @@ model:
   runs_dir: '/scratch/globc/garcia/ClimateBench/runs/exp1/lstm_5scenarios_diurnal_temperature_range'
   model: 'lstm'
   var_to_predict: 'diurnal_temperature_range'
-  exp: 'exp1/lstm_5scenarios_diurnal_temperature_range'
+  test_name : 'lstm_5scenarios_diurnal_temperature_range'
   simus_train: ['ssp126', 'ssp370', 'ssp585', 'hist-GHG', 'hist-aer', 'historical']
   simus_test: ['ssp245']
   img_size: [96, 144]
