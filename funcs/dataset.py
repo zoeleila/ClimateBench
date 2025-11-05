@@ -44,7 +44,8 @@ class Dataset():
                                             "pr90": output_xr.pr90 * 86400}).rename({'lon':'longitude', 
                                                                                     'lat': 'latitude'}).transpose('time','latitude', 'longitude').drop(['quantile'])
 
-
+            print(simu)
+            print(output_xr)
             # Append to list 
             X_train.append(input_xr)
             Y_train.append(output_xr)
@@ -58,7 +59,6 @@ if __name__ == "__main__":
 
     X_train, Y_train = dataset.load_data()
     meanstd_inputs = {}
-
     for var in hparams.vars:
         # To not take the historical data into account several time we have to slice the scenario datasets
         # and only keep the historical data once (in the first ssp index 0 in the simus list)

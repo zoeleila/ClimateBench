@@ -1,0 +1,72 @@
+variables:
+  tas:
+    shortname: tas
+    longname: Temperature
+    unit: K
+    lim:
+      values: [-6, 6] 
+      rmse: [0, 1.75]
+      mae: [0, 1.5]
+      temporal_correlation: [-1, 1]
+      mean_error: [-0.8, 0.8]
+
+    colors:
+      values: 'coolwarm'
+      rmse: 'viridis'
+      mae: 'viridis'
+      temporal_correlation: 'coolwarm'
+      mean_error: 'coolwarm'
+
+  pr:
+    shortname: pr
+    longname: Precipitation
+    unit: mm/day
+    lim:
+      values: [-4, 4] 
+      rmse: [0, 3]
+      mae: [0, 2.5]
+      temporal_correlation: [-1, 1]
+      mean_error: [-0.6, 0.6]
+
+    colors:
+      values: 'BrBG'
+      rmse: 'viridis'
+      mae: 'viridis'
+      temporal_correlation: 'coolwarm'
+      mean_error: 'coolwarm'
+
+  pr90:
+    shortname: pr90
+    longname: Extreme precipitation
+    unit: 'mm/day'
+    lim:
+      values: [-8, 8] 
+      rmse: [0, 8]
+      mae: [0, 6.5]
+      temporal_correlation: [-1, 1]
+      mean_error: [-1.5, 1.5]
+
+    colors:
+      values: 'BrBG'
+      rmse: 'viridis'
+      mae: 'viridis'
+      temporal_correlation: 'coolwarm'
+      mean_error: 'coolwarm'
+
+  diurnal_temperature_range: 
+    shortname: dtr
+    longname: Diurnal temprature range
+    unit: K
+    lim:
+      values: [-2, 2] 
+      rmse: [0, 1.25]
+      mae: [0, 1.1]
+      temporal_correlation: [-1, 1]
+      mean_error: [-1, 1]
+
+    colors:
+      values: 'coolwarm'
+      rmse: 'viridis'
+      mae: 'viridis'
+      temporal_correlation: 'coolwarm'
+      mean_error: 'coolwarm'

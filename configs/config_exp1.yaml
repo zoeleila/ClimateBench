@@ -14,11 +14,11 @@ model:
   max_epochs: 30
   batch_size: 16
   slider: 10
-  runs_dir: '/scratch/globc/garcia/ClimateBench/runs/exp1/lstm_5scenarios_diurnal_temperature_range'
+  runs_dir: '/scratch/globc/garcia/ClimateBench/runs/exp1/lstm_5scenarios_diurnal_temperature_range_3hist'
   model: 'lstm'
   var_to_predict: 'diurnal_temperature_range'
-  test_name : 'lstm_5scenarios_diurnal_temperature_range'
-  simus_train: ['ssp126', 'ssp370', 'ssp585', 'hist-GHG', 'hist-aer', 'historical']
+  test_name : 'lstm_5scenarios_diurnal_temperature_range_3hist'
+  simus_train: ['ssp126', 'ssp370', 'historical', 'ssp585', 'hist-GHG', 'hist-aer']
   simus_test: ['ssp245']
   img_size: [96, 144]
   scheduler_step_size: 50

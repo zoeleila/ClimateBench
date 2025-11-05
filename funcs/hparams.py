@@ -6,6 +6,7 @@ class HParams():
         self.epoch = 30
         self.learning_rate = 0.001
         self.slider = 10
+        self.data_path = RAW_DIR / 'train_val'
         self.sample_dir = DATASET_DIR / 'dataset_exp1'
         self.runs_dir = RUNS_DIR
         self.model = 'lstm'

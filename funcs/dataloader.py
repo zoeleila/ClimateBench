@@ -13,7 +13,6 @@ import re
 
 from ClimateBench.funcs.transforms import ToTensor, Normalize
 
-np.random.seed(42)  
 
 class ClimateBench(Dataset):
     def __init__(self,
@@ -34,12 +33,29 @@ class ClimateBench(Dataset):
         if self.data_type == 'test':
             list_simu = [f'_{simu}_' for simu in self.simus_test]
             regex = re.compile('|'.join(re.escape(p) for p in list_simu))
-            self.samples = [f for f in list_samples if regex.search(f)]
+            list_samples = [f for f in list_samples if regex.search(f)]
+            ordre_exp = {exp: i for i, exp in enumerate(self.simus_test)}
+            list_samples = sorted(
+                list_samples,
+                key=lambda f: (
+                    ordre_exp.get(Path(f).stem.split('_')[1], float('inf'))
+                )
+            )
+            self.samples = list_samples
         else:
             list_simu = [f'_{simu}_' for simu in self.simus_train]
             regex = re.compile('|'.join(re.escape(p) for p in list_simu))
             list_samples = [f for f in list_samples if regex.search(f)]
-            np.random.shuffle(list_samples)
+            ordre_exp = {exp: i for i, exp in enumerate(self.simus_train)}
+            list_samples = sorted(
+                list_samples,
+                key=lambda f: (
+                    ordre_exp.get(Path(f).stem.split('_')[1], float('inf'))
+                )
+            )
+            
+            np.random.seed(6)
+            #np.random.shuffle(list_samples) #A ajouter pour la manière correct de mélanger les données
             split_index = int(len(list_samples) * (1 - stop))
             if self.data_type == 'train':
                 self.samples = list_samples[:split_index]
@@ -92,8 +108,13 @@ def get_dataloaders(data_type: str, config:dict, transforms:bool=True) -> DataLo
                                  Normalize(dataset_dir=Path(config['data']['dataset_dir']))])
     else:
         transforms = v2.Compose([ToTensor()])
+
+    if data_type == 'train':
+        shuffle = True
+    else:
+        shuffle = False
     
-    training_data = ClimateBench(transform=transforms,
+    dataset = ClimateBench(transform=transforms,
                             config=config,
                             data_type=data_type)
     
@@ -102,9 +123,9 @@ def get_dataloaders(data_type: str, config:dict, transforms:bool=True) -> DataLo
     else : 
         batch_size = 1
 
-    dataloader = DataLoader(training_data, 
+    dataloader = DataLoader(dataset, 
                             batch_size=batch_size, 
-                            shuffle=False,
+                            shuffle=shuffle,
                             num_workers=1)
     return dataloader
 
@@ -172,7 +193,7 @@ if __name__ == "__main__":
     for i, batch in enumerate(train_dataloader):
         if i==0:
             x, y = batch
-            print('x shape:', x.shape,x)
+            print('x shape:', x.shape)
             print('y shape:', y.shape)
         else:
             break

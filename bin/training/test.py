@@ -15,7 +15,7 @@ from torchmetrics import MeanSquaredError, MeanAbsoluteError, PearsonCorrCoef
 from ClimateBench.funcs.lightning_module import ClimateBenchLightningModule
 from ClimateBench.funcs.dataloader import get_dataloaders
 from utils.plotutils import EvaluationPlots
-from ClimateBench.funcs.settings import GRAPHS_DIR
+from ClimateBench.funcs.settings import GRAPHS_DIR, CONFIGS_DIR
 
 parser = argparse.ArgumentParser(description="Predict and plot results for full period")
 parser.add_argument('--checkpoint', type=str, required=False, help='Path to model checkpoint')
@@ -34,8 +34,13 @@ pcc = PearsonCorrCoef()
 var_to_predict = config['model']['var_to_predict']
 test_name = config['model']['test_name']
 exp = config['data']['exp']
-plots = EvaluationPlots(simulation_name=config['model']['simus_test'][0],
-                        var_name=var_to_predict)
+simu = config['model']['simus_test'][0]
+
+with open(CONFIGS_DIR / 'config_plots.yaml') as file:
+    config_plots = yaml.safe_load(file)   
+plots = EvaluationPlots(simulation_name=simu,
+                        var_name=config_plots['variables'][var_to_predict]['shortname'],
+                        config_plots=config_plots['variables'][var_to_predict])
 graph_path = GRAPHS_DIR / exp / test_name
 graph_path.mkdir(parents=True, exist_ok=True)
 
@@ -61,11 +66,14 @@ print(f'RMSE: {rmse_val}, MAE: {mae_val}, PCC: {pcc_val}')
 
 plots.plot_time_series(y_full.numpy().squeeze(), 
                         y_hat_full.numpy().squeeze(),
+                        title=f'{test_name} Time Series ({simu})',
                         save_path = graph_path / f'{test_name}_time_series_plot.png')
 plots.plot_spatial_map(y_full.numpy().squeeze(), 
                         y_hat_full.numpy().squeeze(), 
                         time_index=None,
+                        title=f'{test_name} Changes compared to piControl ({simu})',
                         save_path = graph_path/  f'{test_name}_spatial_map_plot.png')
 plots.plot_error_maps(y_full.numpy().squeeze(), 
                         y_hat_full.numpy().squeeze(),
+                        title=f'{test_name} Error Maps ({simu})', 
                         save_path = graph_path / f'{test_name}_error_maps.png')

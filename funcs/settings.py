@@ -15,3 +15,7 @@ RUNS_DIR = SCRATCH_DIR / 'runs'
 DATASET_DIR = SCRATCH_DIR / 'dataset'
 
 PREDICTIONS_DIR = SCRATCH_DIR / 'predictions'
+
+HOME_DIR = Path('/home/globc/garcia/ClimateBench')
+
+CONFIGS_DIR = HOME_DIR / 'configs'

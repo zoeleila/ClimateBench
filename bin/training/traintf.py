@@ -1,11 +1,8 @@
-import sys
-sys.path.append('.')
-
 import json
 import numpy as np
 
-from funcs.hparams import HParams
-from funcs.dataset import Dataset
+from ClimateBench.funcs.hparams import HParams
+from ClimateBench.funcs.dataset import Dataset
 
 
 class Transforms():
@@ -79,10 +76,10 @@ if __name__=='__main__':
 
     hparams = HParams()
     transforms = Transforms(data_path=hparams.data_path)
-    dataset = Dataset(data_path=hparams.data_path, simus=hparams.simus)
+    dataset = Dataset(data_path=hparams.data_path, simus=hparams.simus_train)
 
     X_train, Y_train = dataset.load_data()
-
+    
     import tensorflow as tf
     from tensorflow import keras
     from tensorflow.keras import Sequential
@@ -101,7 +98,8 @@ if __name__=='__main__':
             var_dims = train_xr[var].dims
             train_xr=train_xr.assign({var: (var_dims, transforms.normalize(train_xr[var].data, var))}) 
         X_train_norm.append(train_xr)
-   
+    print(Y_train)
+
     for var_to_predict in hparams.vars_to_predict:
         
         print(var_to_predict)
@@ -118,7 +116,8 @@ if __name__=='__main__':
                                                                      len_historical=hparams.len_historical) for i in range(len(hparams.simus))], axis=0)
         print(X_train_all.shape)
         print(Y_train_all.shape)
-        
+
+      
         # Model    
         keras.backend.clear_session()
         cnn_model = CNNModel(slider=hparams.slider).build()
@@ -160,3 +159,4 @@ if __name__=='__main__':
                     verbose=1,
                     callbacks=[model_checkpoint_callback, tb_callback])
         hist.history
+ 

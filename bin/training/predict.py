@@ -34,7 +34,6 @@ if __name__=='__main__':
     args = parser.parse_args()
 
     hparams_file = Path(args.checkpoint).parent.parent / 'hparams.yaml'
-    print(hparams_file)
     device = 'cpu'
     model = ClimateBenchLightningModule.load_from_checkpoint(args.checkpoint, map_location=device, hparams_file = hparams_file)
     model.eval()
