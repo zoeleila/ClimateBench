@@ -54,7 +54,7 @@ class ClimateBench(Dataset):
                 )
             )
             
-            np.random.seed(6)
+            #np.random.seed(6)
             #np.random.shuffle(list_samples) #A ajouter pour la manière correct de mélanger les données
             split_index = int(len(list_samples) * (1 - stop))
             if self.data_type == 'train':
@@ -108,11 +108,6 @@ def get_dataloaders(data_type: str, config:dict, transforms:bool=True) -> DataLo
                                  Normalize(dataset_dir=Path(config['data']['dataset_dir']))])
     else:
         transforms = v2.Compose([ToTensor()])
-
-    if data_type == 'train':
-        shuffle = True
-    else:
-        shuffle = False
     
     dataset = ClimateBench(transform=transforms,
                             config=config,
@@ -125,7 +120,7 @@ def get_dataloaders(data_type: str, config:dict, transforms:bool=True) -> DataLo
 
     dataloader = DataLoader(dataset, 
                             batch_size=batch_size, 
-                            shuffle=shuffle,
+                            shuffle=False,
                             num_workers=1)
     return dataloader
 
