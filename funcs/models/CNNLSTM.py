@@ -65,7 +65,6 @@ class CNNLSTMModel(nn.Module):
         # LSTM
         lstm_out, _ = self.lstm(cnn_features)
         lstm_out = F.relu(lstm_out[:, -1, :])  # last timestep
-
         # Dense and reshape to image
         out = self.fc(lstm_out)
         out = out.view(batch_size, 1, self.height, self.width)
@@ -88,10 +87,8 @@ def get_CNNLSTM_paper(in_shape, out_shape):
 
 # Example usage
 if __name__ == "__main__":
-    #model = CNNLSTMModel(slider=5)
+    model = CNNLSTMModel(slider=5)
     x = torch.randn(2, 5, 96, 144, 4)  # (batch, time, height, width, channels)
-    in_shape = x.shape[1:]
-    out_shape = x.shape[1:]
-    model = get_CNNLSTM_paper(in_shape, out_shape)
+
     y = model(x)
     print(y.shape)  # Expected: (2, 1, 96, 144)

@@ -1,22 +1,70 @@
 import json
 import numpy as np
+import xarray as xr
+import argparse
+import yaml
+from pathlib import Path
 
-from ClimateBench.funcs.hparams import HParams
-from ClimateBench.funcs.dataset import Dataset
+from ClimateBench.funcs.settings import PREDICTIONS_DIR
 
+class Dataset():
+    def __init__(self, data_path, simus):
+        self.data_path = data_path
+        self.simus = simus
+
+    def load_data(self):
+        X_train = []
+        Y_train = []
+
+        for i, simu in enumerate(self.simus):
+
+            input_name = 'inputs_' + simu + '.nc'
+            output_name = 'outputs_' + simu + '.nc'
+
+            # Just load hist data in these cases 'hist-GHG' and 'hist-aer'
+            if 'hist' in simu:
+                # load inputs 
+                input_xr = xr.open_dataset(self.data_path / input_name)
+                    
+                # load outputs                                                             
+                output_xr = xr.open_dataset(self.data_path / output_name).mean(dim='member')
+                output_xr = output_xr.assign({"pr": output_xr.pr * 86400,
+                                            "pr90": output_xr.pr90 * 86400}).rename({'lon':'longitude', 
+                                                                                    'lat': 'latitude'}).transpose('time','latitude', 'longitude').drop(['quantile'])
+            
+            # Concatenate with historical data in the case of scenario 'ssp126', 'ssp370' and 'ssp585'
+            else:
+                # load inputs 
+                input_xr = xr.open_mfdataset([self.data_path / 'inputs_historical.nc', 
+                                              self.data_path / input_name]).compute()
+                    
+                # load outputs                                                             
+                output_xr = xr.concat([xr.open_dataset(self.data_path / 'outputs_historical.nc').mean(dim='member'),
+                                    xr.open_dataset(self.data_path / output_name).mean(dim='member')],
+                                    dim='time').compute()
+                output_xr = output_xr.assign({"pr": output_xr.pr * 86400,
+                                            "pr90": output_xr.pr90 * 86400}).rename({'lon':'longitude', 
+                                                                                    'lat': 'latitude'}).transpose('time','latitude', 'longitude').drop(['quantile'])
+
+            print(simu)
+            print(output_xr)
+            # Append to list 
+            X_train.append(input_xr)
+            Y_train.append(output_xr)
+        return X_train, Y_train
 
 class Transforms():
-    def __init__(self, data_path):
-        self.meanstd_dict = json.load(open(data_path / 'meanstd_dict.json'))
+    def __init__(self):
+        pass
 
-    def normalize(self, data, var):
-        mean = self.meanstd_dict[var][0]
-        std = self.meanstd_dict[var][1]
+    def normalize(self, data, var, meanstd_dict):
+        mean = meanstd_dict[var][0]
+        std = meanstd_dict[var][1]
         return (data - mean)/std
 
-    def unnormalize(self, data, var):
-        mean = self.meanstd_dict[var][0]
-        std = self.meanstd_dict[var][1]
+    def unnormalize(self, data, var, meanstd_dict):
+        mean = meanstd_dict[var][0]
+        std = meanstd_dict[var][1]
         return data * std + mean
 
     # Functions for reshaping the data 
@@ -73,20 +121,42 @@ class CNNModel:
         return model
 
 if __name__=='__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--config', type=str, required=True, help='Path to the config file')
+    args = parser.parse_args()
+    config_path = args.config
 
-    hparams = HParams()
-    transforms = Transforms(data_path=hparams.data_path)
-    dataset = Dataset(data_path=hparams.data_path, simus=hparams.simus_train)
+    with open(config_path) as file:
+        config = yaml.safe_load(file)
+
+    transforms = Transforms()
+    dataset = Dataset(data_path=Path(config['data']['raw_dir']), simus=config['model']['simus_train'])
+    len_historical = config['data']['len_historical']
+    var_to_predict = config['model']['var_to_predict']
+    slider = config['data']['slider']
+    simus_train = config['model']['simus_train']
+    simus_train.remove('historical')
+    exp = config['data']['exp']
+    predictions_dir = PREDICTIONS_DIR / exp
 
     X_train, Y_train = dataset.load_data()
+    meanstd_inputs = {}
+
+    for var in config['data']['vars']:
+        # To not take the historical data into account several time we have to slice the scenario datasets
+        # and only keep the historical data once (in the first ssp index 0 in the simus list)
+        array = np.concatenate([X_train[i][var].data for i in [0, 3, 4]] + 
+                            [X_train[i][var].sel(time=slice(len_historical, None)).data for i in range(1, 3)])
+        print((array.mean(), array.std()))
+        meanstd_inputs[var] = (array.mean(), array.std())
     
     import tensorflow as tf
     from tensorflow import keras
     from tensorflow.keras import Sequential
     from tensorflow.keras.layers import Dense, Activation, Conv2D, Flatten, Input, Reshape, AveragePooling2D, MaxPooling2D, Conv2DTranspose, TimeDistributed, LSTM, GlobalAveragePooling2D, BatchNormalization
     from tensorflow.keras.regularizers import l2
+    print(tf.config.list_physical_devices('GPU'))
     import random 
-    from tensorboard import SummaryWriter
     seed = 6 
     random.seed(seed)
     np.random.seed(seed)
@@ -94,69 +164,67 @@ if __name__=='__main__':
 
     X_train_norm = [] 
     for i, train_xr in enumerate(X_train): 
-        for var in hparams.vars: 
+        for var in config['data']['vars']: 
             var_dims = train_xr[var].dims
-            train_xr=train_xr.assign({var: (var_dims, transforms.normalize(train_xr[var].data, var))}) 
+            train_xr=train_xr.assign({var: (var_dims, transforms.normalize(train_xr[var].data, var, meanstd_inputs))}) 
         X_train_norm.append(train_xr)
-    print(Y_train)
 
-    for var_to_predict in hparams.vars_to_predict:
-        
-        print(var_to_predict)
-        
-        # Data
-        X_train_all = np.concatenate([transforms.input_for_training(X_train_norm[i], 
-                                                                    hparams.slider, 
+    
+    print(var_to_predict)
+    
+    # Data
+    X_train_all = np.concatenate([transforms.input_for_training(X_train_norm[i], 
+                                                                slider, 
+                                                                skip_historical=(i<2), 
+                                                                len_historical=len_historical) for i in range(len(simus_train))], axis = 0)
+    Y_train_all = np.concatenate([transforms.output_for_training(Y_train[i], 
+                                                                    var_to_predict, 
+                                                                    slider, 
                                                                     skip_historical=(i<2), 
-                                                                    len_historical=hparams.len_historical) for i in range(len(hparams.simus))], axis = 0)
-        Y_train_all = np.concatenate([transforms.output_for_training(Y_train[i], 
-                                                                     var_to_predict, 
-                                                                     hparams.slider, 
-                                                                     skip_historical=(i<2), 
-                                                                     len_historical=hparams.len_historical) for i in range(len(hparams.simus))], axis=0)
-        print(X_train_all.shape)
-        print(Y_train_all.shape)
+                                                                    len_historical=len_historical) for i in range(len(simus_train))], axis=0)
+    print(X_train_all.shape)
+    print(Y_train_all.shape)
 
-      
-        # Model    
-        keras.backend.clear_session()
-        cnn_model = CNNModel(slider=hparams.slider).build()
-        cnn_model.summary()
-        cnn_model.compile(optimizer=keras.optimizers.RMSprop(learning_rate=hparams.learning_rate), 
-                  loss=keras.losses.MeanSquaredError(), 
-                  metrics=["mse"])
+   
+    # Model    
+    keras.backend.clear_session()
+    cnn_model = CNNModel(slider=slider).build()
+    cnn_model.summary()
+    cnn_model.compile(optimizer=keras.optimizers.RMSprop(), 
+                loss=keras.losses.MeanSquaredError(), 
+                metrics=["mse"])
 
-        run_dir = hparams.runs_path / hparams.exp / var_to_predict
-        run_dir.mkdir(parents=True, exist_ok=True)
-        checkpoint_filepath = run_dir / 'best-checkpoint-{val_loss:.2f}.keras'
-        model_checkpoint_callback = tf.keras.callbacks.ModelCheckpoint(
-            filepath=checkpoint_filepath,
-            save_weights_only=False,
-            monitor='val_loss',
-            mode='min',
-            save_best_only=True,
-            )
-        tb_callback = tf.keras.callbacks.TensorBoard(log_dir=run_dir/ 'logs', histogram_freq=1)
-
-        # add custom scalars layout for TensorBoard (uses tensorboardX if available)
-        try:
-            layout = {
-            "Check Overfit": {
-                "loss": ["Multiline", ["train_loss", "val_loss"]],
-            },
-            }
-            writer = SummaryWriter(log_dir=str(run_dir / 'logs'))
-            writer.add_custom_scalars(layout)
-            writer.close()
-        except Exception:
-            # tensorboardX not installed or failed -> skip custom layout
-            pass
-
-        hist = cnn_model.fit(X_train_all,
+    hist = cnn_model.fit(X_train_all,
                     Y_train_all,
-                    batch_size=hparams.batch_size, 
-                    epochs=hparams.epoch,
+                    use_multiprocessing=True, 
+                    #workers=5,
+                    batch_size=16,
+                    epochs=30,
                     verbose=1,
-                    callbacks=[model_checkpoint_callback, tb_callback])
-        hist.history
- 
+                    validation_split=0.2)
+    hist.history
+
+    simu_test = config['model']['simus_test'][0]
+    X_test = xr.open_mfdataset([Path(config['data']['raw_dir']) / 'inputs_historical.nc',
+                            Path(config['data']['raw_dir']) / f'inputs_{simu_test}.nc']).compute()
+
+    # Normalize input data 
+    for var in config['data']['vars']: 
+        var_dims = X_test[var].dims
+        X_test = X_test.assign({var: (var_dims, transforms.normalize(X_test[var].data, var, meanstd_inputs))}) 
+        
+    X_test_np = transforms.input_for_training(X_test, skip_historical=False, len_historical=len_historical) 
+
+    m_pred = cnn_model.predict(X_test_np)
+    # Reshape to xarray 
+    m_pred = m_pred.reshape(m_pred.shape[0], m_pred.shape[2], m_pred.shape[3])
+    m_pred = xr.DataArray(m_pred, dims=['time', 'lat', 'lon'], coords=[X_test.time.data[slider-1:], X_test.latitude.data, X_test.longitude.data])
+    xr_prediction = m_pred.transpose('lat', 'lon', 'time').sel(time=slice(2015,2101)).to_dataset(name=var_to_predict)
+
+    if var_to_predict=="pr90" or var_to_predict=="pr":
+        xr_prediction = xr_prediction.assign({var_to_predict: xr_prediction[var_to_predict] / 86400})
+
+    # Save test predictions as .nc 
+    xr_prediction.to_netcdf(predictions_dir / f'{simu_test}_2015_2100_paper_{var_to_predict}.nc')
+    xr_prediction.close()
+     

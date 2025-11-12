@@ -12,7 +12,7 @@ class ToTensor:
 class Normalize:
     """Normalize a tensor sample with mean and standard deviation."""
     def __init__(self, dataset_dir):
-        stats_path = dataset_dir / 'statistics3.json'
+        stats_path = dataset_dir / 'statistics1.json'
         with open(stats_path, 'r') as f:
             stats = json.load(f)
         self.mean = torch.tensor([stats[c]['mean'] for c in stats])

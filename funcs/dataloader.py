@@ -54,8 +54,6 @@ class ClimateBench(Dataset):
                 )
             )
             
-            #np.random.seed(6)
-            #np.random.shuffle(list_samples) #A ajouter pour la manière correct de mélanger les données
             split_index = int(len(list_samples) * (1 - stop))
             if self.data_type == 'train':
                 self.samples = list_samples[:split_index]
@@ -117,6 +115,11 @@ def get_dataloaders(data_type: str, config:dict, transforms:bool=True) -> DataLo
         batch_size = config['model']['batch_size']
     else : 
         batch_size = 1
+    
+    if data_type == 'train':
+        shuffle = True
+    else: 
+        shuffle = False
 
     dataloader = DataLoader(dataset, 
                             batch_size=batch_size, 
