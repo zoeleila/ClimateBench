@@ -1,4 +1,4 @@
-variables:
+outputs:
   tas:
     shortname: tas
     longname: Temperature
@@ -70,3 +70,32 @@ variables:
       mae: 'viridis'
       temporal_correlation: 'coolwarm'
       mean_error: 'coolwarm'
+
+inputs:
+  CO2:
+    longname: | 
+      Cumulative anthropogenic CO2 
+      emissions since 1850
+    unit: GtCO2
+    lim:
+      values: [0, 10000]
+  CH4:
+    longname: | 
+      Anthropogenic CH4 emissions
+    unit: GtCH4 / year
+    lim:
+      values: [0, 0.8]
+  SO2:
+    longname: | 
+      Anthropogenic SO2 
+      emissions
+    unit: TgSO2 / year
+    lim:
+      values: [0, 8e-12]
+  BC: 
+    longname: |
+      Anthropogenic BC 
+      emissions
+    unit: TgBC / year 
+    lim:
+      values: [0, 5e-13]
