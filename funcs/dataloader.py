@@ -123,7 +123,7 @@ def get_dataloaders(data_type: str, config:dict, transforms:bool=True) -> DataLo
 
     dataloader = DataLoader(dataset, 
                             batch_size=batch_size, 
-                            shuffle=False,
+                            shuffle=shuffle,
                             num_workers=1)
     return dataloader
 
@@ -187,12 +187,13 @@ if __name__ == "__main__":
     with open(config_path) as file:
         config = yaml.safe_load(file)
 
-    train_dataloader = get_dataloaders(data_type='train', config=config)
+    train_dataloader = get_dataloaders(data_type='val', config=config)
     for i, batch in enumerate(train_dataloader):
         if i==0:
             x, y = batch
             print('x shape:', x.shape)
             print('y shape:', y.shape)
         else:
-            break
+            x, y = batch
+            print(y)
     

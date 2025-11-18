@@ -11,11 +11,11 @@ from ClimateBench.funcs.dataloader import get_dataloaders
 from ClimateBench.funcs.lightning_module import ClimateBenchLightningModule
 
 # Set random seeds for reproducibility
-seed = 6
-random.seed(seed)
-np.random.seed(seed)
-torch.manual_seed(seed)
-torch.cuda.manual_seed_all(seed)
+#seed = 6
+#random.seed(seed)
+#np.random.seed(seed)
+#torch.manual_seed(seed)
+#torch.cuda.manual_seed_all(seed)
 
 torch.cuda.is_available()
 
@@ -34,12 +34,16 @@ test_dataloader = get_dataloaders('test', config)
 model = ClimateBenchLightningModule(config)
 
 logger = TensorBoardLogger(save_dir=config['model']['runs_dir'], name='lightning_logs')
+'''
 checkpoint_callback = ModelCheckpoint(
     monitor="val_loss", 
     filename='best-checkpoint-{epoch:02d}-{val_loss:.2f}',
     save_top_k=1,
     mode='min'
 )
+'''
+checkpoint_callback = ModelCheckpoint(monitor=None,
+                                      filename='best-checkpoint-{epoch:02d}-{val_loss:.2f}')
 torch.set_float32_matmul_precision('high') # For hybrid partition
 
 trainer = pl.Trainer(max_epochs=config['model']['max_epochs'], 

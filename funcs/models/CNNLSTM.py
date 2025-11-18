@@ -3,19 +3,6 @@ import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
 
-import tensorflow as tf
-from tensorflow import keras
-from tensorflow.keras import Sequential
-from tensorflow.keras.layers import Dense, Activation, Conv2D, Flatten, Input, Reshape, AveragePooling2D, MaxPooling2D, Conv2DTranspose, TimeDistributed, LSTM, GlobalAveragePooling2D, BatchNormalization
-from tensorflow.keras.regularizers import l2
-
-import random 
-seed = 6 
-random.seed(seed)
-np.random.seed(seed)
-tf.random.set_seed(seed)
-
-
 
 class CNNLSTMModel(nn.Module):
     def __init__(self, slider, height=96, width=144, channels=4,
@@ -58,37 +45,23 @@ class CNNLSTMModel(nn.Module):
             out = self.global_avg_pool(out)
             out = out.view(batch_size, -1)  # (batch, conv_filters)
             cnn_features.append(out)
-
         # Stack over time → (batch, time, conv_filters)
         cnn_features = torch.stack(cnn_features, dim=1)
 
         # LSTM
         lstm_out, _ = self.lstm(cnn_features)
-        lstm_out = F.relu(lstm_out[:, -1, :])  # last timestep
+        lstm_out = F.relu(lstm_out[:, -1, :])  # last timestep (see tf LSTM return_sequence)
         # Dense and reshape to image
         out = self.fc(lstm_out)
         out = out.view(batch_size, 1, self.height, self.width)
         return out
 
-def get_CNNLSTM_paper(in_shape, out_shape):
-    keras.backend.clear_session()
-    cnn_model = None
-
-    cnn_model = Sequential()
-    cnn_model.add(Input(shape=in_shape))
-    cnn_model.add(TimeDistributed(Conv2D(20, (3, 3), padding='same', activation='relu'))) # , input_shape=in_shape))
-    cnn_model.add(TimeDistributed(AveragePooling2D(2)))
-    cnn_model.add(TimeDistributed(GlobalAveragePooling2D()))
-    cnn_model.add(LSTM(25, activation='relu'))
-    cnn_model.add(Dense(np.prod(out_shape)))
-    cnn_model.add(Activation('linear'))
-    cnn_model.add(Reshape(out_shape))
-    return cnn_model
 
 # Example usage
 if __name__ == "__main__":
-    model = CNNLSTMModel(slider=5)
-    x = torch.randn(2, 5, 96, 144, 4)  # (batch, time, height, width, channels)
-
+    print('ok')
+    model = CNNLSTMModel(slider=10)
+    
+    x = torch.randn(16, 10, 96, 144, 4)  # (batch, time, height, width, channels)
     y = model(x)
     print(y.shape)  # Expected: (2, 1, 96, 144)

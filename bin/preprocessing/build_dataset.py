@@ -28,7 +28,7 @@ class BuilderDataset:
         input_name = 'inputs_' + simu + '.nc'
 
         # Just load hist data in these cases 'hist-GHG' and 'hist-aer'
-        if 'hist' in simu:
+        if 'hist' in simu or '1pctCO2' in simu or 'abrupt-4xCO2' in simu:
             # load inputs 
             input_xr = xr.open_dataset(self.raw_dir / input_name)
         
@@ -46,7 +46,7 @@ class BuilderDataset:
         output_name = 'outputs_' + simu + '.nc'
 
         # Just load hist data in these cases 'hist-GHG' and 'hist-aer'
-        if 'hist' in simu:
+        if 'hist' in simu or '1pctCO2' in simu or 'abrupt-4xCO2' in simu:
             # load outputs                                                             
             output_xr = xr.open_dataset(self.raw_dir / output_name).mean(dim='member')
             output_xr = output_xr.assign({"pr": output_xr.pr * 86400,
@@ -94,6 +94,7 @@ class BuilderDataset:
                                    simu=simu)
         time = self.time_formating(Y_xr.time.data,
                                    simu=simu)
+        print('Y',Y_xr.time.data )
         return X_np, Y_np, time
         
 
@@ -106,7 +107,7 @@ if __name__ == "__main__":
     with open(config) as file:
         config = yaml.safe_load(file)
 
-    simus = config['data']['simus']
+    #simus = config['data']['simus']
     slider = config['data']['slider']
     len_historical = config['data']['len_historical']
     raw_dir = Path(config['data']['raw_dir'])
@@ -115,15 +116,17 @@ if __name__ == "__main__":
     builder = BuilderDataset(raw_dir=raw_dir,
                              slider=slider,
                              len_historical=len_historical)
-    
+    simus = ['1pctCO2', 'abrupt-4xCO2']
     for i, simu in enumerate(simus):
         print(simu)
         X_np, Y_np, time = builder.build_samples(simu)
+
         for i, year in enumerate(np.squeeze(time)):
-            print(year)
+            print('years',year)
             sample = {'x': X_np[i],
                       'y': Y_np[i]}
-            sample_name = f'sample_{simu}_{year}.npz'
+            sample_name = f'sample_{simu}_{year:03d}.npz'
+            print(sample_name)
             np.savez(dataset_dir / sample_name, **sample)
             
         
